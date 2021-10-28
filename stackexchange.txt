@@ -1,0 +1,14 @@
+# SNEHASIS NAYAK
+# 21260962
+# snehasis.nayak2@mail.dcu.ie
+
+Queries executed in the StackExchange to get top 200,000 posts by viewcount
+
+
+1. select top 50000 * from posts where posts.ViewCount > 127070 
+ORDER BY posts.ViewCount
+2.select top 50000 * from posts where posts.ViewCount> 74400 and posts.ViewCount < 127080 ORDER BY posts.ViewCount desc
+3. select top 50000 * from posts where posts.ViewCount> 52800 and posts.ViewCount < 74425 ORDER BY posts.ViewCount desc
+4. select top 50000 * from posts where posts.ViewCount> 41000 and posts.ViewCount < 53100 ORDER BY posts.ViewCount desc
+5. select top 200 * from posts where posts.ViewCount < 41248 ORDER BY posts.ViewCount desc
+

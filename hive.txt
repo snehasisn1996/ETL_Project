@@ -1,0 +1,34 @@
+sta# SNEHASIS NAYAK
+# 21260962
+# snehasis.nayak2@mail.dcu.ie
+
+1. Create a database
+ create database dc;
+
+2. Selecting database
+ use dc;
+
+3. Creating table stark for gettting values for the first 3 questions
+ CREATE TABLE stark (id INT, Score INT, ViewCount INT, Body STRING,  OwnerUserId INT, Title STRING, Tags STRING) ;
+
+4. The top 10 posts by score
+ SELECT id, score from dc.stark ORDER BY score DESC LIMIT 10;
+
+5. The top 10 users by post score
+ SELECT owneruserid, SUM(score) AS T_Score from dc.stark
+ Where owneruserid is NOT NULL GROUP BY owneruserid
+ ORDER BY T_Score DESC LIMIT 10;
+
+
+6. The number of distinct users, who used the word ‘cloud’ in one of their post
+ SELECT COUNT(DISTINCT owneruserid) from dc.stark 
+ WHERE lower(body) like '% cloud %' OR lower(title) like '% cloud %' or lower(tags) like '% cloud 
+%' ;
+
+7.Loading the TF-IDF data from the HDFS into Hive table
+load data inpath '/user/sn/dd/output4/part-0000*' into table user_post_tfidf;
+
+8. The top 10 terms for each of the top 10 users by post score, as returned from query 6
+select * from ( select userId, tfidf, word, rank() over ( partition by userId order by tfidf desc) as rank from user_post_tfidf ) t where rank <= 10;
+
+

@@ -1,0 +1,45 @@
+# SNEHASIS NAYAK
+# 21260962
+# snehasis.nayak2@mail.dcu.ie
+
+Steps for the first 3 questions
+
+1. Combining 4 CSV file using 
+ cd /Users/snehasis/Desktop/Combine
+ cat *.csv >combined.csv
+
+2. Loading the data into PIG
+ newdata = LOAD '/sn/combined.csv' USING org.apache.pig.piggybank.storage.CSVExcelStorage(',','YES_MULTILINE','NOCHANGE','SKIP_INPUT_HEADER') AS (id:int, posttypeid:int, acceptedanswerid:int, parentid:int, creationdate:chararray, deletiondate:chararray, score:int, viewcount:int, body:chararray, owneruserid:int, ownerdisplayname:chararray, lasteditoruserid:int, lasteditordisplayname:chararray, lasteditdate:chararray, lastactivitydate:chararray, title:chararray, tags:chararray, answercount:int, commentcount:int, favoritecount:int, closeddate:chararray, communityowneddate:chararray, contentlicense:chararray ); 
+
+3.Reducing the number of columns into 6 (id, score, viewcount, owneruserid, tags, body)
+ newdata = FOREACH newdata GENERATE id, score, viewcount, body, owneruserid, title, tags;
+
+4. Removing Duplicates
+ newdata = DISTINCT newdata;
+5. removing the newline from the column body
+ newdata = FOREACH newdata GENERATE id, score, viewcount , owneruserid, title, tags, (REPLACE(body,'[\r\n]+','')) AS body;  
+6. Storing the data into HDFS
+ STORE newdata INTO 'dc.stark' USING org.apache.hive.hcatalog.pig.HCatStorer();--------------------------------------------------------------------------------
+
+Steps for the 4th question
+
+Loading the data into PIG
+1. newdata = LOAD '/sn/combined.csv' USING org.apache.pig.piggybank.storage.CSVExcelStorage(',','YES_MULTILINE','NOCHANGE','SKIP_INPUT_HEADER') AS (id:int, posttypeid:int, acceptedanswerid:int, parentid:int, creationdate:chararray, deletiondate:chararray, score:int, viewcount:int, body:chararray, owneruserid:int, ownerdisplayname:chararray, lasteditoruserid:int, lasteditordisplayname:chararray, lasteditdate:chararray, lastactivitydate:chararray, title:chararray, tags:chararray, answercount:int, commentcount:int, favoritecount:int, closeddate:chararray, communityowneddate:chararray, contentlicense:chararray );
+
+Reducing the number of columns into 4 (id, score, owneruserid, body) and removing the newline, tags witesapce etc from the column body.
+2.newdata = FOREACH newdata GENERATE id, score, owneruserid, REPLACE(REPLACE(REPLACE(REPLACE(REPLACE((REPLACE(body,'[\r\n]+','')),'<[^>]>' , ' '),'[^a-zA-Z\\s\']+',' '),'(?=\\S[\'])([a-zA-Z\'-]+)',''),'(?<![\\w\\-])\\w(?![\\w\\-])',''),'[ ]{2,}',' ') AS body;
+
+Finding the top 10 user based on the score
+3. newdata_distinctuserspost = GROUP newdata BY owneruserid;
+newdata_usersbymaxscore = FOREACH newdata_distinctuserspost GENERATE group AS userid, MAX(newdata.score) AS maxscore;
+newdata_usersbymaxscoredescorder = ORDER newdata_usersbymaxscore BY maxscore DESC;
+newdata_limit_10 = LIMIT newdata_usersbymaxscoredescorder 10;
+newdata_top10userid = FOREACH newdata_limit_10 GENERATE userid;
+
+Geting the post of the top 10 user
+4.newdata_postsby10users = JOIN newdata BY owneruserid, newdata_top10userid BY userid;
+
+newdata_postsby10users = FOREACH newdata_postsby10users GENERATE newdata::owneruserid, LOWER(TRIM(REPLACE(newdata::body,'[ ]{2,}',' '))) AS newdata::body;
+
+ Saving the owneruserid and body of the top 10 users into HDFS
+5. STORE newdata_postsby10users INTO '/sn/tfidf' USING org.apache.pig.piggybank.storage.CSVExcelStorage(',','NO_MULTILINE','NOCHANGE','SKIP_OUTPUT_HEADER'); 
